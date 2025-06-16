@@ -119,7 +119,7 @@ App URL 은 아래와 같은 형태로 생성된다.
 세부적으로 차이가 있는지는 모르겠지만, 일단 이 경우를 기준으로 보았을 때는 그냥 js 를 사용하듯이 사용해도 문제가 없었다.
 
 ```js
-const GITHUB_TOKEN = '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';
+const GITHUB_TOKEN = '{github token}';
 const GITHUB_OWNER = 'gyunam-bark';
 const GITHUB_REPO = 'nb02-how-do-i-look-team1';
 const GITHUB_NICKNAMES = {
