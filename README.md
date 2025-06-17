@@ -4,17 +4,20 @@
 
 ### 구현 기능 \/ 요소 목록
 
-| 기능/요소 이름                          |
-| :-------------------------------------- |
-| GITHUB ISSUE - GOOGLE SPREAD SHEET 연동 |
-| GITHUB ISSUE 탬플릿 구현                |
-| GITHUB PR - DISCORD 연동                |
-| DTO 미들웨어 구현                       |
-| TAG API 구현                            |
-| LOG API 구현 / LOG 스키마 작성          |
-| 프론트엔드 - 백엔드 연동 및 배포        |
+| 기능/요소 이름                                |
+| :-------------------------------------------- |
+| [GITHUB ISSUE 와 GOOGLE SPREADSHEET 연동](/#) |
+| [GITHUB ISSUE 탬플릿 구현](/#)                |
+| [GITHUB PR 와 DISCORD 연동](/#)               |
+| [DTO 미들웨어 구현](/#)                       |
+| [GLOBAL ERROR HANDLER 미들웨어 구현](/#)      |
+| [TAG API 구현](/#)                            |
+| [LOG API 구현](/#)                            |
+| [HEALTHCHECK API 구현](/#)                    |
+| [SWAGGER 연동](/#)                            |
+| [프론트엔드 와 백엔드 배포](/#)               |
 
-### GITHUB ISSUE - GOOGLE SPREAD SHEET 연동
+### GITHUB ISSUE 와 GOOGLE SPREAD SHEET 연동
 
 #### 기능 개요
 
@@ -32,311 +35,226 @@ flowchart TD
 
 #### 구현 목표
 
-1. Github Issue가 등록되면, Webhook 으로 Google Run Function 으로 이슈 목록 정보를 보낸다.
+1. Github Issue -> Webhook -> Google Run Function
 
-2. Google Run Function 기능과 Node.js 와 Axios 를 활용하여 Google Apps Script 로 이슈 목록 정보를 보낸다.
+2. Google Run Function\(Node.js, Axios\) -> Google Apps Script
 
-3. Google Apps Script 는 받은 이슈 목록 정보를 처리한 뒤, 소속된 Google Spread Sheet 에 업데이트 한다.
+3. Google Apps Script -> Google Spreadsheet
 
 #### 기술 스택 및 도구
 
 | 기술 스택                          | 서비스 제공자 |
 | :--------------------------------- | ------------- |
-| Github Webhook                     | 깃허브        |
-| Google Run Function(Node.js/Axios) | 구글          |
-| Google Apps Script(js)             | 구글          |
+| Github Webhook                     | Github        |
+| Google Run Function(Node.js/Axios) | Google        |
+| Google Apps Script(js)             | Google        |
 
 #### 구현 방식 / 로직
 
-1. Github Issue -> Google Runs Function
+1. Github Token 발급
 
-![1](/images/1.png)
+   단 한번만 보이기 때문에 별도의 장소에 저장해서 관리한다.
 
-Github 설정에서 Webhook 에 어디로 보낼 지 URL 을 지정한다.
+2. Google Apps Script 작성
 
-2번에서 만드는 Google Run Function 의 App URL 을 넣어주면 된다.
+   단순하게 GET 요청으로 JSON 을 받아온다.
 
-2. Google Run Function -> Google Apps Script
+   ```js
+   // PSEUDOCODE
+   GITHUB_TOKEN = 'ghp_{ID}';
+   GITHUB_OWNER = '{NICKNAME}';
+   GITHUB_REPO = '{REPOSITORY_NAME}';
+   GITHUB_NICKNAMES = {
+     NICKNAME: 'NAME',
+   };
 
-**Google Run Function**
+   allIssues = [];
 
-구글에서 만든 컨테이너화 된 애플리케이션을 서버리스 방식으로 배포하고 실행할 수 있는 완전 관리형 플랫폼이다.
+   url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/issues?state=all&per_page=100&page=${page}`;
 
-즉, 컨테이너 이미지로 만들어서 업로드만 하면, 구글이 알아서 자동 확장, 로드 밸런싱 들 운영 관련된 작업을 알아서 처리해준다.
+   options = {
+     method: 'get',
+     headers: {
+       Authorization: `token ${GITHUB_TOKEN}`,
+       Accept: 'application/vnd.github+json',
+     },
+     muteHttpExceptions: true,
+   };
 
-매월 요청 200만개가 무료로 제공된다.
+   response = UrlFetchApp.fetch(url, options);
 
-이 무료 요청 때문에 이 플랫폼을 사용하기로 결정했다.
+   result = JSON.parse(response.getContentText());
 
-팀 프로젝트인데, 돈 쓰기는 부담되었기 때문이다.
+   // 받아온 JSON 을 바탕으로 allIssues 에 저장
+   loop {
+     allIssues.push({
+       number: issue.number,
+       author: issue.user ? mapGithubUser(issue.user.login) : '알 수 없음',
+       labels: otherLabels,
+       labelsStr: otherLabels.join(', '),
+       title: issue.title,
+       progress: progress,
+       startDate: startDate,
+       endDate: endDate,
+     });
+   }
 
-**새 프로젝트 생성**
+   // 각각의 ROW에 처리된 값 입력
+   loop {
+    sheet.getRange(row, 1).setValue(issue.{KEYWORD});
+    // ...
+   }
 
-프로젝트를 생성할 때, 일반적인 Run 과 Function 이 있는데, 나는 Function 을 선택했다.
+   // 배포할 때 아래 함수를 배포해서 URL 호출로
+   // 함수를 동작할 수 있습니다.
+   doByGoogleRunFunction(e) {
+     // 로직 함수
+     return ContentService.createTextOutput("OK");
+   }
+   ```
 
-Function 은 함수 하나만 동작할 때 편리하다. 이번에는 단순히 Webhook 을 받아서 Google Apps Script 의 특정 배포 URL POST 로 Issue 목록 정보를 전달 할 수 있으면 기 때문에, Function 을 사용한다.
+   단순히 이 스크립트를 실행하기만 해도 비동기적으로 Github 의 Issue 목록을 받아와서 최신화를 잘 해준다.
 
-반대로 Run 은 진짜 API 서버와 같이 서비스를 올릴 때 편리하다.
+   다만, 실시간으로 동기화 하는 것을 목표로 했기 때문에, 이제 이 **doByGoogleRunFunction(e)** 을 호출할 방법을 찾아야 한다.
 
-**함수 진입점**
+   보안상의 이유로 Google Apps Script 는 직접적으로 웹서버를 구현할 수가 없다. 그래서 별도로 중계해주는 역할을 하는 웹서버를 만들어서 Google Apps Script 함수를 실행하는 URL 로 던져줘야 한다.
 
-> githubWebhook
+3. Google Run Function 작성
 
-**INDEX.JS**
+   구글에서 만든 컨테이너화 된 애플리케이션을 서버리스 방식으로 배포하고 실행할 수 있는 완전 관리형 플랫폼이다.
 
-반드시 함수 진입점이 메인으로 모듈화 되어야 한다.
+   즉, 컨테이너 이미지로 만들어서 업로드만 하면, 구글이 알아서 자동 확장, 로드 밸런싱 들 운영 관련된 작업을 알아서 처리해준다.
 
-```js
-// INDEX.JS
-const axios = require('axios');
+   매월 요청 200만개가 무료로 제공된다.
 
-exports.githubWebhook = async (req, res) => {
-  console.log('GitHub Webhook 수신:', req.body);
+   그중 Function 은 단순하게 하나의 함수만 동작하면 될 때 사용하기 좋다.
 
-  const scriptUrl = 'https://script.google.com/macros/s/{Apps Script URL}';
+   이번에는 Github 의 Webhook 을 받아서 Google Apps Script 로 전달하는 단순한 역할만 하면 되기 때문에 Function 을 선택했다.
 
-  try {
-    const response = await axios.post(scriptUrl);
-    console.log('Apps Script 호출 성공:', response.status);
-    res.status(200).send('OK');
-  } catch (err) {
-    console.error('호출 실패:', err.message);
-    res.status(500).send('실패');
-  }
-};
-```
+   위에서 만들었던 **배포 URL** 에 POST 로 보내주는 간단한 API 서버를 Node.js 와 Axios 로 구현한다.
 
-**App URL**
-App URL 은 아래와 같은 형태로 생성된다.
+   ```js
+   // PSEUDOCODE
+   const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/{ID}';
 
-> https://{project-id}.{region}.run.app
+   export githubWebhook = async (req, res) => {
+     await axios.post(APPS_SCRIPT_URL);
+     res.status(200).send('OK');
+   };
+   ```
 
-이 URL 을 아까 1번의 Github Webhook 대상 URL 에 적용해주면 된다.
+   단, 함수 진입점은 export 하는 함수 이름을 동일하게 맞춰야 한다. 이번에는 **githubWebhook** 이 함수 진입점이다.
 
-3. Google Apps Script -> Google Spread Sheet
-   Google Apps Script 는 js 거의 유사한 스크립트 언어를 사용한다.
+4. Github Webhook 설정
 
-세부적으로 차이가 있는지는 모르겠지만, 일단 이 경우를 기준으로 보았을 때는 그냥 js 를 사용하듯이 사용해도 문제가 없었다.
-
-```js
-const GITHUB_TOKEN = '{github token}';
-const GITHUB_OWNER = 'gyunam-bark';
-const GITHUB_REPO = 'nb02-how-do-i-look-team1';
-const GITHUB_NICKNAMES = {
-  'gyunam-bark': '박규남',
-  kwonnahyun0125: '권나현',
-  stella62420: '김슬비',
-  JINSOLdev: '김진솔',
-  hippo8427: '하상준',
-};
-
-function mapGithubUser(login) {
-  return GITHUB_NICKNAMES[login] || login;
-}
-
-function extractDatesFromBody(body) {
-  const startMatch = body.match(/### 시작날짜\s+([0-9]{4}-[0-9]{2}-[0-9]{2})/);
-  const endMatch = body.match(/### 종료날짜\s+([0-9]{4}-[0-9]{2}-[0-9]{2})/);
-  return {
-    startDate: startMatch ? startMatch[1] : '',
-    endDate: endMatch ? endMatch[1] : '',
-  };
-}
-
-function fillIssuesInSheet() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  const maxRows = 997;
-  const allIssues = [];
-  let page = 1;
-
-  // 기존 데이터 삭제
-  sheet.getRange('A6:H999').clearContent();
-
-  while (allIssues.length < maxRows) {
-    const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/issues?state=all&per_page=100&page=${page}`;
-    const options = {
-      method: 'get',
-      headers: {
-        Authorization: `token ${GITHUB_TOKEN}`,
-        Accept: 'application/vnd.github+json',
-      },
-      muteHttpExceptions: true,
-    };
-
-    const response = UrlFetchApp.fetch(url, options);
-    const result = JSON.parse(response.getContentText());
-
-    if (!Array.isArray(result) || result.length === 0) break;
-
-    for (const issue of result) {
-      if (!issue.pull_request) {
-        const allLabels = issue.labels || [];
-
-        // '스크럼' 라벨이 있으면 제외
-        const hasScrumLabel = allLabels.some((label) => label.name === '스크럼');
-        if (hasScrumLabel) continue;
-
-        let progress = 0;
-        const otherLabels = [];
-
-        for (const label of allLabels) {
-          const match = label.name.match(/^(\d{1,3})%$/);
-          if (match) {
-            progress = parseInt(match[1], 10);
-          } else {
-            otherLabels.push(label.name);
-          }
-        }
-
-        const { startDate, endDate } = extractDatesFromBody(issue.body || '');
-
-        allIssues.push({
-          number: issue.number,
-          author: issue.user ? mapGithubUser(issue.user.login) : '알 수 없음',
-          labels: otherLabels,
-          labelsStr: otherLabels.join(', '),
-          title: issue.title,
-          progress: progress,
-          startDate: startDate,
-          endDate: endDate,
-        });
-
-        if (allIssues.length >= maxRows) break;
-      }
-    }
-
-    page++;
-  }
-
-  // 정렬 순서: '일정' → 일반 → '완료'
-  const scheduleIssues = allIssues.filter((issue) => issue.labels.includes('일정'));
-  const doneIssues = allIssues.filter((issue) => issue.labels.includes('완료') && !issue.labels.includes('일정'));
-  const otherIssues = allIssues.filter((issue) => !issue.labels.includes('완료') && !issue.labels.includes('일정'));
-  const sortedIssues = [...scheduleIssues, ...otherIssues, ...doneIssues];
-
-  for (let i = 0; i < sortedIssues.length; i++) {
-    const issue = sortedIssues[i];
-    const row = 6 + i;
-
-    const duration =
-      issue.startDate && issue.endDate
-        ? (new Date(issue.endDate) - new Date(issue.startDate)) / (1000 * 60 * 60 * 24) + 1
-        : '';
-
-    sheet.getRange(row, 1).setValue(issue.number); // A: 번호
-    sheet.getRange(row, 2).setValue(issue.author); // B: 작성자
-    sheet.getRange(row, 3).setValue(issue.labelsStr); // C: 라벨
-    sheet.getRange(row, 4).setValue(issue.title); // D: 제목
-    sheet.getRange(row, 5).setValue(issue.startDate); // E: 시작날짜
-    sheet.getRange(row, 6).setValue(issue.endDate); // F: 종료날짜
-    sheet.getRange(row, 7).setValue(duration); // G: 진행일수
-    sheet.getRange(row, 8).setValue(issue.progress); // H: 진행률
-  }
-}
-
-// GCF → WebApp용 진입점
-function doPost(e) {
-  fillIssuesInSheet();
-  return ContentService.createTextOutput('OK');
-}
-```
+   이제 위에서 만든 Google Run Function 의 URL 을 Github Webhook 을 생성할 때 넣어주면 된다.
 
 #### 문제 및 해결 과정
 
-1. Google Apps Script 는 무겁다.
+1. Google Apps Script 는 무겁지만, 조건부 서식이 더 무겁다.
 
-물론, 내가 작성한 코드가 모두 지운 뒤에 다시 전부 새로 입력하기 때문에 느린 것도 있다.
+   실시간 동기화를 목표로 했지만, 생각보다 즉시 바뀐다는 인상은 받지 못했다.
 
-근데 테스트해봤더니, 의외로 전부 지운 뒤에 다시 새로 입력하나, 변동된 부분만 수정해서 행을 변동하나 큰 속도 차이가 없었다.
+   물론, Webhook 이 정상적으로 잘 동작하고 있고, 평균 4~5초 정도면 최신화가 되는 것을 확인할 수 있었다.
 
-오히려 이 Google Apps Script 가 동작하는 도중에 또 새로운 요청이 들어오면 꼬이는 경우가 발생해서, 아예 리셋 후 새로 그리는 걸로 꼬이는 경우를 방지했다.
+   4~5초 정도로도 충분한 동작 시간이긴 했지만, 좀 더 빠르게 할 수 없을까 싶어서 여러가지 방법을 시도해보았는데 의외의 사실을 하나 발견했다.
 
-속도가 느린 것에는 조건부 서식이 적용되는 것도 한 몫하는 것으로 추정된다.
+   구글 시트 전체를 다 지우고 새로 데이터를 기입하나, 부분적으로 수정하나 큰 차이가 없었다. 물론, 차이는 발생한다. 한 1초 차이 정도?
 
-조건부 서식이 없을 경우에는 2초 정도 더 빨리 완료 되었다.
+   대신 부분적으로 수정하는 것은 더 고려사항이 많다. 특히 Issue 가 많이 만들어질 때에는 동시에 2~3개 씩 만들어졌는데, 이 Apps Script 가 느려서 꼬이는 경우가 많이 발생했다. 그리고 시트 특성상 꼬이면 나머지 데이터들도 망가지는 경우가 많았다.
+
+   그래서 그냥 꼬이는 부분이 발생하지 않도록, 아예 모든 데이터를 지웠다가 다시 대입하는 것으로 했다. 의외로 이 단계에서는 부분 수정이나 전체 데이터 새로 대입하는 거나 사실 거의 차이점이 없다.
+
+   차이점은 **조건부 서식** 에서 발생한다.
+
+   조건부 서식이 엄청나게 느리다! Issue 가 늘면 늘수록 이 변화하는 시간이 더 걸린다는 것을 알 수 있다.
 
 #### 성과 및 결과
 
-1. Github Wwbhook 사용법을 학습했다.
+1. Github Webhook 사용법을 학습했다.
 
 2. Google Run Function 사용법을 학습했다.
 
 3. Google AppScript 사용법을 학습했다.
 
-4. 팀원들은 Github Issue 만 탬플릿에 따라 작성하면 된다.
+4. 사용자는 Github Issue 만 작성하면 되도록 자동화되었다.
 
 ### GITHUB ISSUE 템플릿 구현
 
 #### 기능 개요
 
+공통적으로 사용되는 Issue 의 항목을 템플릿화 하여 제공한다.
+
 #### 구현 목표
 
-1. 정해진 규칙에 따라 반복되는 Issue 항목들을 템플릿화 하여 제공한다.
+1. 정해진 규칙에 따른 템플릿 작성
+
+2. Google Spreadsheet 연동
 
 #### 기술 스택 및 도구
 
 | 기술 스택             | 서비스 제공자 |
 | :-------------------- | ------------- |
-| Github ISSUE_TEMPLATE | 깃허브        |
+| Github ISSUE_TEMPLATE | Github        |
 
 #### 구현 방식 / 로직
 
-**/.github/ISSUE_TEMPLATE/**
+1. /.github/ISSUE_TEMPLATE/
 
-ISSUE_TEMPLATE 디렉토리를 만들고 내부에 .md 파일을 생성하면, Github 에서 Issue 를 생성할 때 선택지가 표시된다.
+   ISSUE_TEMPLATE 디렉토리를 만들고 내부에 .md 파일을 생성하면, Github 에서 Issue 를 생성할 때 선택지가 표시된다.
 
-![2](/images/2.png)
+   ![1](/images/1.png)
 
-**todo-template.md**
+2. todo-template.md
 
-처음 설계했을 때는 Commit 컨벤션에 따른 키워드를 \[\] 에 넣을 예정이었다.
+   처음 설계했을 때는 Commit 컨벤션에 따른 키워드를 \[\] 에 넣을 예정이었다.
 
-근데, 나중에 코드잇 협업 규칙들 중에 \'\[이름\]\' 으로 적는 규칙을 발견해서 TODO 대신 이름을 적는 것으로 통일했다.
+   근데, 나중에 코드잇 협업 규칙들 중에 \'\[이름\]\' 으로 적는 규칙을 발견해서 TODO 대신 이름을 적는 것으로 통일했다.
 
-코드는 따로 수정할 필요는 없어 보여서 TODO 그대로 두기로 했다.
+   코드는 따로 수정할 필요는 없어 보여서 TODO 그대로 두기로 했다.
 
-```md
----
-name: 기본 TODO
-about: 시작/종료 날짜가 포함된 업무를 등록합니다.
-title: '[TODO] '
-labels: []
-assignees: []
----
+   ```md
+   ---
+   name: 기본 TODO
+   about: 시작/종료 날짜가 포함된 업무를 등록합니다.
+   title: '[TODO] '
+   labels: []
+   assignees: []
+   ---
 
-### 시작날짜
+   ### 시작날짜
 
-2025-06-02
+   2025-06-02
 
-### 종료날짜
+   ### 종료날짜
 
-2025-06-20
+   2025-06-20
 
----
+   ---
 
-### 할 일 내용
+   ### 할 일 내용
 
-- [ ] 할 일 1
-- [ ] 할 일 2
-```
+   - [ ] 할 일 1
+   - [ ] 할 일 2
+   ```
 
 #### 문제 및 해결 과정
 
 1. default 브랜치에 올라가야 동작한다.
 
-1팀은 기본적으로 dev 브랜치에 작업하고, 안정화 버전만 main 브랜치에 올리는 것이 규칙이었다.
+   1팀은 기본적으로 dev 브랜치에 작업하고, 안정화 버전만 main 브랜치에 올리는 것이 규칙이었다.
 
-그래서 todo-template.md 을 dev 까지만 올리고 테스트를 진행했는데, Issue 를 만들 때 템플릿이 표시가 되지 않았다.
+   그래서 todo-template.md 을 dev 까지만 올리고 테스트를 진행했는데, Issue 를 만들 때 템플릿이 표시가 되지 않았다.
 
-이리저리 찾아보니, 이런 템플릿은 default 브랜치, 즉, 1팀 기준 main 브랜치에 올라가야 동작한다는 것을 알 수 있었다.
+   이리저리 찾아보니, 이런 템플릿은 default 브랜치, 즉, 1팀 기준 main 브랜치에 올라가야 동작한다는 것을 알 수 있었다.
 
-main 브랜치에 올리니 문제없이 동작했다.
+   main 브랜치에 올리니 문제없이 동작했다.
 
 #### 성과 및 결과
 
 1. 모두가 동일한 템플릿으로 Issue 를 작성할 수 있다.
 
-2. Gantt 시트가 문제없이 동기화 될 수 있다.
+2. Gantt 시트가 실시간으로 동기화 되었다.
 
 ### GITHUB PR - DISCORD 연동
 
@@ -407,3 +325,7 @@ main 브랜치에 올리니 문제없이 동작했다.
 #### 문제 및 해결 과정
 
 #### 성과 및 결과
+
+```
+
+```
