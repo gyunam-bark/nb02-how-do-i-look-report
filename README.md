@@ -10,18 +10,18 @@
 
 ### 구현 기능 \/ 요소 목록
 
-| 기능/요소 이름                                |
-| :-------------------------------------------- |
+| 기능/요소 이름                                                                                                               |
+| :--------------------------------------------------------------------------------------------------------------------------- |
 | [GITHUB ISSUE 와 GOOGLE SPREADSHEET 연동](?tab=readme-ov-file#github-issue-%EC%99%80-google-spread-sheet-%EC%97%B0%EB%8F%99) |
-| [GITHUB ISSUE 탬플릿 구현](/#)                |
-| [GITHUB PR 와 DISCORD 연동](/#)               |
-| [DTO 미들웨어 구현](/#)                       |
-| [GLOBAL ERROR HANDLER 미들웨어 구현](/#)      |
-| [TAG API 구현](/#)                            |
-| [LOG API 구현](/#)                            |
-| [SWAGGER 연동](/#)                            |
-| [HEALTHCHECK API 구현](/#)                    |
-| [배포](/#)                                    |
+| [GITHUB ISSUE 탬플릿 구현](/#)                                                                                               |
+| [GITHUB PR 와 DISCORD 연동](/#)                                                                                              |
+| [DTO 미들웨어 구현](/#)                                                                                                      |
+| [GLOBAL ERROR HANDLER 미들웨어 구현](/#)                                                                                     |
+| [TAG API 구현](/#)                                                                                                           |
+| [LOG API 구현](/#)                                                                                                           |
+| [SWAGGER 연동](/#)                                                                                                           |
+| [HEALTHCHECK API 구현](/#)                                                                                                   |
+| [배포](/#)                                                                                                                   |
 
 ### GITHUB ISSUE 와 GOOGLE SPREAD SHEET 연동
 
@@ -479,6 +479,56 @@ flowchart TD
 #### 성과 및 결과
 
 1. Controller 는 req.validated 로 검증 및 변환된 요청 파라미터를 사용하기만 하면 된다.
+
+### GLOBAL ERROR HANDLER 미들웨어 구현
+
+#### 기능 개요
+
+```mermaid
+flowchart TD
+    CLIENT[CLIENT]
+    ROUTER[ROUTER]
+    CONTROLLER[CONTROLLER]
+    GLOBAL_ERROR_HANDLER[GLOBAL ERROR HANDLER]
+
+    CLIENT --> ROUTER
+    ROUTER --> CONTROLLER
+    CONTROLLER -->|FAIL| GLOBAL_ERROR_HANDLER
+    GLOBAL_ERROR_HANDLER -->|RESPONSE| CLIENT
+
+```
+
+#### 구현 목표
+
+1. API 서버에서 발생하는 모든 에러를 처리하는 미들웨어
+
+#### 기술 스택 및 도구
+
+| 기술 스택  | 서비스 제공자 |
+| :--------- | ------------- |
+| statusCode | MDN           |
+
+#### 구현 방식 / 로직
+
+1. 모든 라우터가 use 된 뒤에 use 된다.
+
+2. 고정된 메세지 값이 출력되도록, statusCode 별 메시지를 맵핑한다.
+
+3. API 명세서 대로 에러를 출력하도록 message 값이 있을 경우 덮어씌운다.
+
+4. 에러가 발생했을 경우, 데이터베이스에 Log 를 저장한다.
+
+#### 문제 및 해결 과정
+
+1. 산발적인 statusCode 사용
+
+   에러 로그를 저장하다가 간혹 나와서는 안되는 에러 코드가 발생해서 확인해보니, API 명세서와 다르게 작업한 API 들이 있었다.
+
+   그래서 API 명세서에서 사용되는 에러코드와 상황을 정리해서 공유함으로써 에러 코드를 통일했다.
+
+#### 성과 및 결과
+
+1. 에러가 발생할 경우 Global Error Handler 에서 모든 에러를 처리하고 저장한다.
 
 ### TAG API 구현
 
