@@ -12,7 +12,7 @@
 
 | 기능/요소 이름                                |
 | :-------------------------------------------- |
-| [GITHUB ISSUE 와 GOOGLE SPREADSHEET 연동](/#) |
+| [GITHUB ISSUE 와 GOOGLE SPREADSHEET 연동](?tab=readme-ov-file#github-issue-%EC%99%80-google-spread-sheet-%EC%97%B0%EB%8F%99) |
 | [GITHUB ISSUE 탬플릿 구현](/#)                |
 | [GITHUB PR 와 DISCORD 연동](/#)               |
 | [DTO 미들웨어 구현](/#)                       |
