@@ -10,18 +10,18 @@
 
 ### 구현 기능 \/ 요소 목록
 
-| 기능/요소 이름                                                                                                               |
-| :--------------------------------------------------------------------------------------------------------------------------- |
-| [GITHUB ISSUE 와 GOOGLE SPREADSHEET 연동](?tab=readme-ov-file#github-issue-%EC%99%80-google-spread-sheet-%EC%97%B0%EB%8F%99) |
-| [GITHUB ISSUE 탬플릿 구현](/#)                                                                                               |
-| [GITHUB PR 와 DISCORD 연동](/#)                                                                                              |
-| [DTO 미들웨어 구현](/#)                                                                                                      |
-| [GLOBAL ERROR HANDLER 미들웨어 구현](/#)                                                                                     |
-| [TAG API 구현](/#)                                                                                                           |
-| [LOG API 구현](/#)                                                                                                           |
-| [SWAGGER 연동](/#)                                                                                                           |
-| [HEALTHCHECK API 구현](/#)                                                                                                   |
-| [배포](/#)                                                                                                                   |
+| 기능/요소 이름                                                                                                                         |
+| :------------------------------------------------------------------------------------------------------------------------------------- |
+| [GITHUB ISSUE 와 GOOGLE SPREADSHEET 연동](?tab=readme-ov-file#github-issue-%EC%99%80-google-spread-sheet-%EC%97%B0%EB%8F%99)           |
+| [GITHUB ISSUE 탬플릿 구현](?tab=readme-ov-file#github-issue-%ED%85%9C%ED%94%8C%EB%A6%BF-%EA%B5%AC%ED%98%84)                            |
+| [GITHUB PR 와 DISCORD 연동](?tab=readme-ov-file#github-pr---discord-%EC%97%B0%EB%8F%99)                                                |
+| [DTO 미들웨어 구현](?tab=readme-ov-file#dto-%EB%AF%B8%EB%93%A4%EC%9B%A8%EC%96%B4-%EA%B5%AC%ED%98%84)                                   |
+| [GLOBAL ERROR HANDLER 미들웨어 구현](?tab=readme-ov-file#global-error-handler-%EB%AF%B8%EB%93%A4%EC%9B%A8%EC%96%B4-%EA%B5%AC%ED%98%84) |
+| [TAG API 구현](?tab=readme-ov-file#tag-api-%EA%B5%AC%ED%98%84)                                                                         |
+| [LOG API 구현](?tab=readme-ov-file#log-api-%EA%B5%AC%ED%98%84)                                                                         |
+| [SWAGGER 연동](?tab=readme-ov-file#swagger-%EC%97%B0%EB%8F%99)                                                                         |
+| [HEALTHCHECK API 구현](?tab=readme-ov-file#swagger-%EC%97%B0%EB%8F%99)                                                                 |
+| [배포](?tab=readme-ov-file#swagger-%EC%97%B0%EB%8F%99)                                                                                 |
 
 ### GITHUB ISSUE 와 GOOGLE SPREAD SHEET 연동
 
